@@ -14,6 +14,8 @@ import io.undertow.UndertowOptions
 import io.undertow.predicate.Predicates
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
+import io.undertow.server.handlers.accesslog.AccessLogHandler
+import io.undertow.server.handlers.accesslog.AccessLogReceiver
 import io.undertow.util.Methods
 import io.undertow.util.StatusCodes
 import north.undertow.*
@@ -41,6 +43,13 @@ fun main(args: Array<String>) {
             .build()
     )
 
+    val accessLogHandler = AccessLogHandler(
+            HttpHandler {},
+            AccessLogReceiver { println(it) },
+            "%h %l %u %t \"%r\" %s %b %D",
+            ClassLoader.getSystemClassLoader()
+    )
+
     val router = RouterBuilder()
             .add(Methods.GET, "/authorized", Predicates.truePredicate(), Oauth.authorized(setOf("uid"), { exchange ->
                 exchange.respondWith(200, "Authorized response")
@@ -62,6 +71,7 @@ fun main(args: Array<String>) {
             .build()
 
     val handler = PipelineHandlerBuilder(router)
+            .before { accessLogHandler.handleRequest(it); Continue }
             .before(Oauth.requestFilter(asyncHttpClient, "http://localhost:8082/tokeninfo"))
             .before {
                 println("requestFilter 1")
