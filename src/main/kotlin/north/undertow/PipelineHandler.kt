@@ -91,7 +91,7 @@ sealed class FilterStatus
 sealed class SyncFilterStatus : FilterStatus()
 object Continue : SyncFilterStatus()
 object RequestHandled : SyncFilterStatus()
-class AsyncProcessStarted(val future: CompletableFuture<SyncFilterStatus>) : FilterStatus()
+class AsyncProcessStarted(val future: CompletableFuture<out SyncFilterStatus>) : FilterStatus()
 
 typealias RequestFilter = (exchange: HttpServerExchange) -> FilterStatus
 
