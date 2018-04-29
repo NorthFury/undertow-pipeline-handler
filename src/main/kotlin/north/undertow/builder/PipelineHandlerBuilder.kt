@@ -1,11 +1,13 @@
 package north.undertow.builder
 
+import io.undertow.predicate.Predicate
+import io.undertow.predicate.Predicates
 import io.undertow.util.StatusCodes
 import north.undertow.*
 
 class PipelineHandlerBuilder(private val router: Router) {
-    private val requestFilters = mutableListOf<RequestFilter>()
-    private val responseFilters = mutableListOf<ResponseFilter>()
+    private val requestFilters = mutableListOf<Pair<Predicate, RequestFilter>>()
+    private val responseFilters = mutableListOf<Pair<Predicate, ResponseFilter>>()
 
     private var exceptionHandler: ExceptionHandler = { exception, exchange ->
         println(exception.message)
@@ -13,7 +15,7 @@ class PipelineHandlerBuilder(private val router: Router) {
         exchange.responseSender.send(StatusCodes.INTERNAL_SERVER_ERROR_STRING)
     }
 
-    fun build(): ExpressHandler = ExpressHandler(
+    fun build(): PipelineHandler = PipelineHandler(
             requestFilters = requestFilters,
             responseFilters = responseFilters,
             router = router,
@@ -21,12 +23,23 @@ class PipelineHandlerBuilder(private val router: Router) {
     )
 
     fun before(requestFilter: RequestFilter): PipelineHandlerBuilder {
-        requestFilters.add(requestFilter)
+        requestFilters.add(Predicates.truePredicate() to requestFilter)
+        return this
+    }
+
+
+    fun before(predicate: Predicate, requestFilter: RequestFilter): PipelineHandlerBuilder {
+        requestFilters.add(predicate to requestFilter)
         return this
     }
 
     fun after(responseFilter: ResponseFilter): PipelineHandlerBuilder {
-        responseFilters.add(responseFilter)
+        responseFilters.add(Predicates.truePredicate() to responseFilter)
+        return this
+    }
+
+    fun after(predicate: Predicate, responseFilter: ResponseFilter): PipelineHandlerBuilder {
+        responseFilters.add(predicate to responseFilter)
         return this
     }
 
