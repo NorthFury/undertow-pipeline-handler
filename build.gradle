@@ -43,33 +43,33 @@ dependencies {
             name: 'undertow-core',
             version: '2.0.4.Final'
 
-    compile group: 'com.fasterxml.jackson.core',
+    testCompile group: 'com.fasterxml.jackson.core',
             name: 'jackson-core',
             version: jackson_version
 
-    compile group: 'com.fasterxml.jackson.core',
+    testCompile group: 'com.fasterxml.jackson.core',
             name: 'jackson-databind',
             version: jackson_version
 
-    compile group: 'com.fasterxml.jackson.core',
+    testCompile group: 'com.fasterxml.jackson.core',
             name: 'jackson-annotations',
             version: jackson_version
 
-    compile group: 'io.dropwizard.metrics',
+    testCompile group: 'io.dropwizard.metrics',
             name: 'metrics-core',
             version: dropwizard_metrics_version
 
-    compile group: 'io.dropwizard.metrics',
+    testCompile group: 'io.dropwizard.metrics',
             name: 'metrics-json',
             version: dropwizard_metrics_version
+
+    testCompile group: 'ch.qos.logback',
+            name: 'logback-classic',
+            version: '1.2.1'
 
     compile group: 'org.jetbrains.kotlin',
             name: 'kotlin-stdlib-jre8',
             version: kotlin_version
-
-    compile group: 'ch.qos.logback',
-            name: 'logback-classic',
-            version: '1.2.1'
 
     testCompile group: 'org.jetbrains.kotlin',
             name: 'kotlin-test-junit',

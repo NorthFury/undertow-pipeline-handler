@@ -1,4 +1,4 @@
-package north
+package north.undertow.example
 
 import io.undertow.Undertow
 import io.undertow.predicate.Predicates
