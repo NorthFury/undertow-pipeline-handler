@@ -55,6 +55,18 @@ dependencies {
             name: 'jackson-annotations',
             version: jackson_version
 
+    testCompile group: 'com.fasterxml.jackson.datatype',
+            name: 'jackson-datatype-jsr310',
+            version: jackson_version
+
+    testCompile group: 'com.fasterxml.jackson.module',
+            name: 'jackson-module-kotlin',
+            version: jackson_version
+
+    testCompile group: 'org.asynchttpclient',
+            name: 'async-http-client',
+            version: '2.4.5'
+
     testCompile group: 'io.dropwizard.metrics',
             name: 'metrics-core',
             version: dropwizard_metrics_version
@@ -66,6 +78,10 @@ dependencies {
     testCompile group: 'ch.qos.logback',
             name: 'logback-classic',
             version: '1.2.1'
+
+    compile group: 'org.jetbrains.kotlin',
+            name: 'kotlin-reflect',
+            version: '1.2.41'
 
     compile group: 'org.jetbrains.kotlin',
             name: 'kotlin-stdlib-jre8',
