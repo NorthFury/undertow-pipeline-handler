@@ -5,16 +5,11 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.util.AttachmentKey
 import io.undertow.util.HttpString
 import io.undertow.util.PathTemplate
-import io.undertow.util.StatusCodes
 import java.util.concurrent.CompletableFuture
 
 class Router(
         routes: List<Route>,
-        private val notFoundRouteHandler: RouteHandler = { exchange ->
-            exchange.statusCode = StatusCodes.NOT_FOUND
-            exchange.responseSender.send(StatusCodes.NOT_FOUND_STRING)
-            Handled
-        }
+        private val notFoundRouteHandler: RouteHandler
 ) {
     private val routesByMethod = routes.groupBy(Route::method).mapValues {
         it.value.sortedBy { it.pathTemplate }
