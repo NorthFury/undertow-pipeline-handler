@@ -71,25 +71,25 @@ fun main(args: Array<String>) {
             .build()
 
     val handler = PipelineHandlerBuilder(router)
-            .before { accessLogHandler.handleRequest(it); Continue }
-            .before(Oauth.requestFilter(asyncHttpClient, "http://localhost:8082/tokeninfo"))
-            .before {
+            .requestFilter { accessLogHandler.handleRequest(it); Continue }
+            .requestFilter(Oauth.requestFilter(asyncHttpClient, "http://localhost:8082/tokeninfo"))
+            .requestFilter {
                 println("requestFilter 1")
                 Continue
             }
-            .before {
+            .requestFilter {
                 val future = CompletableFuture.runAsync {
                     Thread.sleep(100)
                     println("asyncRequestFilter")
                 }
                 AsyncProcessStarted(future.thenApply { Continue })
             }
-            .before {
+            .requestFilter {
                 println("requestFilter 2")
                 Continue
             }
-            .after(MarshalingFilter.filter(objectMapper))
-            .after(MetricsFilter.filter(metricRegistry))
+            .responseFilter(MarshalingFilter.filter(objectMapper))
+            .responseFilter(MetricsFilter.filter(metricRegistry))
             .build()
 
     val metricsHandler = Handlers.routing()

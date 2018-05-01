@@ -22,23 +22,23 @@ class PipelineHandlerBuilder(private val router: Router) {
             exceptionHandler = exceptionHandler
     )
 
-    fun before(requestFilter: RequestFilter): PipelineHandlerBuilder {
+    fun requestFilter(requestFilter: RequestFilter): PipelineHandlerBuilder {
         requestFilters.add(Predicates.truePredicate() to requestFilter)
         return this
     }
 
 
-    fun before(predicate: Predicate, requestFilter: RequestFilter): PipelineHandlerBuilder {
+    fun requestFilter(predicate: Predicate, requestFilter: RequestFilter): PipelineHandlerBuilder {
         requestFilters.add(predicate to requestFilter)
         return this
     }
 
-    fun after(responseFilter: ResponseFilter): PipelineHandlerBuilder {
+    fun responseFilter(responseFilter: ResponseFilter): PipelineHandlerBuilder {
         responseFilters.add(Predicates.truePredicate() to responseFilter)
         return this
     }
 
-    fun after(predicate: Predicate, responseFilter: ResponseFilter): PipelineHandlerBuilder {
+    fun responseFilter(predicate: Predicate, responseFilter: ResponseFilter): PipelineHandlerBuilder {
         responseFilters.add(predicate to responseFilter)
         return this
     }
