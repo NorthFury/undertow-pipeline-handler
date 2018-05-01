@@ -4,15 +4,18 @@ import io.undertow.predicate.Predicate
 import io.undertow.predicate.Predicates
 import io.undertow.util.StatusCodes
 import north.undertow.*
+import org.slf4j.LoggerFactory
 
 class PipelineHandlerBuilder(private val router: Router) {
     private val requestFilters = mutableListOf<Pair<Predicate, RequestFilter>>()
     private val responseFilters = mutableListOf<Pair<Predicate, ResponseFilter>>()
 
     private var exceptionHandler: ExceptionHandler = { exception, exchange ->
-        println(exception.message)
-        exchange.statusCode = StatusCodes.INTERNAL_SERVER_ERROR
-        exchange.responseSender.send(StatusCodes.INTERNAL_SERVER_ERROR_STRING)
+        logger.error("pipeline handler exception", exception)
+        if (!exchange.isResponseStarted) {
+            exchange.statusCode = StatusCodes.INTERNAL_SERVER_ERROR
+            exchange.endExchange()
+        }
     }
 
     fun build(): PipelineHandler = PipelineHandler(
@@ -46,5 +49,9 @@ class PipelineHandlerBuilder(private val router: Router) {
     fun withExceptionHandler(exceptionHandler: ExceptionHandler): PipelineHandlerBuilder {
         this.exceptionHandler = exceptionHandler
         return this
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(PipelineHandlerBuilder::class.java)!!
     }
 }
