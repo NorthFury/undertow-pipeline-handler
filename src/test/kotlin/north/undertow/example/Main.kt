@@ -14,6 +14,7 @@ import io.undertow.UndertowOptions
 import io.undertow.predicate.Predicates
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
+import io.undertow.server.handlers.BlockingHandler
 import io.undertow.server.handlers.accesslog.AccessLogHandler
 import io.undertow.server.handlers.accesslog.AccessLogReceiver
 import io.undertow.util.Methods
@@ -52,7 +53,7 @@ fun main(args: Array<String>) {
 
     val router = RouterBuilder()
             .add(Methods.GET, "/authorized", Predicates.truePredicate(), Oauth.authorized(setOf("uid"), { exchange ->
-                exchange.respondWith(200, "Authorized response")
+                exchange.respondWith(200, "authorized response")
                 Handled
             }))
             .add(Methods.GET, "/test/{one}", Predicates.truePredicate(), { exchange ->
@@ -63,7 +64,6 @@ fun main(args: Array<String>) {
             .add(Methods.GET, "/async", Predicates.truePredicate(), { exchange ->
                 val future = CompletableFuture.runAsync {
                     Thread.sleep(100)
-                    println("async route")
                     exchange.respondWith(StatusCodes.OK, "async response")
                 }
                 AsyncResponse(future)
@@ -73,21 +73,6 @@ fun main(args: Array<String>) {
     val handler = PipelineHandlerBuilder(router)
             .requestFilter { accessLogHandler.handleRequest(it); Continue }
             .requestFilter(Oauth.requestFilter(asyncHttpClient, "http://localhost:8082/tokeninfo"))
-            .requestFilter {
-                println("requestFilter 1")
-                Continue
-            }
-            .requestFilter {
-                val future = CompletableFuture.runAsync {
-                    Thread.sleep(100)
-                    println("asyncRequestFilter")
-                }
-                AsyncProcessStarted(future.thenApply { Continue })
-            }
-            .requestFilter {
-                println("requestFilter 2")
-                Continue
-            }
             .responseFilter(MarshalingFilter.filter(objectMapper))
             .responseFilter(MetricsFilter.filter(metricRegistry))
             .build()
@@ -106,7 +91,7 @@ fun main(args: Array<String>) {
 
     val server = Undertow.builder()
             .addHttpListener(8080, "0.0.0.0", handler)
-            .addHttpListener(8081, "0.0.0.0", metricsHandler)
+            .addHttpListener(8081, "0.0.0.0", BlockingHandler(metricsHandler))
             .setServerOption(UndertowOptions.RECORD_REQUEST_START_TIME, true)
             .build()
 
