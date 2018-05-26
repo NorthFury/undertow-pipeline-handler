@@ -22,7 +22,7 @@ object MarshalingFilter {
         }
     }
 
-    val RESPONSE_OBJECT_KEY: AttachmentKey<ResponseObject> = AttachmentKey.create(ResponseObject::class.java)
+    val RESPONSE_OBJECT_KEY = AttachmentKey.create(ResponseObject::class.java)!!
 }
 
 data class ResponseObject(val statusCode: Int, val value: Any)

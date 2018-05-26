@@ -71,7 +71,7 @@ object Oauth {
 
     private val logger = LoggerFactory.getLogger(Oauth::class.java)!!
 
-    val TOKEN_INFO_KEY: AttachmentKey<TokenInfo> = AttachmentKey.create(TokenInfo::class.java)
+    val TOKEN_INFO_KEY = AttachmentKey.create(TokenInfo::class.java)!!
 }
 
 data class TokenInfo(
