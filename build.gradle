@@ -2,9 +2,9 @@ group 'north'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.2.30'
-    ext.jackson_version = '2.9.1'
-    ext.dropwizard_metrics_version = '3.2.5'
+    ext.kotlin_version = '1.2.41'
+    ext.jackson_version = '2.9.5'
+    ext.dropwizard_metrics_version = '4.0.2'
 
     ext.ktor_version = '0.4.0'
 
@@ -41,7 +41,7 @@ repositories {
 dependencies {
     compile group: 'io.undertow',
             name: 'undertow-core',
-            version: '2.0.4.Final'
+            version: '2.0.8.Final'
 
     compile group: 'org.slf4j',
             name: 'slf4j-api',
@@ -69,7 +69,7 @@ dependencies {
 
     testCompile group: 'org.asynchttpclient',
             name: 'async-http-client',
-            version: '2.4.5'
+            version: '2.4.7'
 
     testCompile group: 'io.dropwizard.metrics',
             name: 'metrics-core',
@@ -81,14 +81,14 @@ dependencies {
 
     testCompile group: 'ch.qos.logback',
             name: 'logback-classic',
-            version: '1.2.1'
+            version: '1.2.3'
 
     compile group: 'org.jetbrains.kotlin',
             name: 'kotlin-reflect',
-            version: '1.2.41'
+            version: kotlin_version
 
     compile group: 'org.jetbrains.kotlin',
-            name: 'kotlin-stdlib-jre8',
+            name: 'kotlin-stdlib-jdk8',
             version: kotlin_version
 
     testCompile group: 'org.jetbrains.kotlin',
