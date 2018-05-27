@@ -11,7 +11,6 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import io.undertow.Handlers
 import io.undertow.Undertow
 import io.undertow.UndertowOptions
-import io.undertow.predicate.Predicates
 import io.undertow.server.HttpHandler
 import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.BlockingHandler
@@ -52,16 +51,16 @@ fun main(args: Array<String>) {
     )
 
     val router = RouterBuilder()
-            .add(Methods.GET, "/authorized", Predicates.truePredicate(), Oauth.authorized(setOf("uid"), { exchange ->
+            .add(Methods.GET, "/authorized", Oauth.authorized(setOf("uid"), { exchange ->
                 exchange.respondWith(200, "authorized response")
                 RouteStatus.Handled
             }))
-            .add(Methods.GET, "/test/{one}", Predicates.truePredicate(), { exchange ->
+            .add(Methods.GET, "/test/{one}", { exchange ->
                 println("route")
                 exchange.responseSender.send(exchange.pathParams["one"])
                 RouteStatus.Handled
             })
-            .add(Methods.GET, "/async", Predicates.truePredicate(), { exchange ->
+            .add(Methods.GET, "/async", { exchange ->
                 val future = CompletableFuture.runAsync {
                     Thread.sleep(100)
                     exchange.respondWith(StatusCodes.OK, "async response")

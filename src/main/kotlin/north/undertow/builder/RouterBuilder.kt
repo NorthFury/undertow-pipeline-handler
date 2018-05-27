@@ -1,6 +1,7 @@
 package north.undertow.builder
 
 import io.undertow.predicate.Predicate
+import io.undertow.predicate.Predicates
 import io.undertow.util.HttpString
 import io.undertow.util.PathTemplate
 import io.undertow.util.StatusCodes
@@ -22,6 +23,10 @@ class RouterBuilder {
     fun withNotFoundRouteHandler(routeHandler: RouteHandler): RouterBuilder {
         notFoundRouteHandler = routeHandler
         return this
+    }
+
+    fun add(method: HttpString, path: String, handler: RouteHandler): RouterBuilder {
+        return this.add(method, path, Predicates.truePredicate(), handler)
     }
 
     fun add(method: HttpString, path: String, predicate: Predicate, handler: RouteHandler): RouterBuilder {

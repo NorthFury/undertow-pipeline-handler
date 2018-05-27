@@ -1,7 +1,6 @@
 package north.undertow.it
 
 import io.undertow.Undertow
-import io.undertow.predicate.Predicates
 import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.BlockingHandler
 import io.undertow.util.AttachmentKey
@@ -27,7 +26,7 @@ class IntegrationTests {
         }
 
         val router = RouterBuilder()
-                .add(Methods.GET, "/test", Predicates.truePredicate()) { exchange ->
+                .add(Methods.GET, "/test") { exchange ->
                     val future = CompletableFuture.runAsync {
                         Thread.sleep(100)
                         exchange.appendToResponse("asyncHandler")
@@ -103,7 +102,6 @@ class IntegrationTests {
                 .add(
                         Methods.GET,
                         "/test",
-                        Predicates.truePredicate(),
                         DispatchingHandler.createRouteHandler(
                                 { next ->
                                     BlockingHandler(next)
@@ -117,7 +115,6 @@ class IntegrationTests {
                 .add(
                         Methods.GET,
                         "/async",
-                        Predicates.truePredicate(),
                         DispatchingHandler.createRouteHandler(
                                 { next ->
                                     BlockingHandler(next)
