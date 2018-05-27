@@ -19,7 +19,7 @@ class IntegrationTests {
 
     @Test
     fun orderTest() {
-        val responseAttachmentKey: AttachmentKey<String> = AttachmentKey.create(String::class.java)
+        val responseAttachmentKey = AttachmentKey.create(String::class.java)
 
         fun HttpServerExchange.appendToResponse(value: String) {
             val response = getAttachment(responseAttachmentKey)?.plus(" ") ?: ""
@@ -92,6 +92,71 @@ class IntegrationTests {
                 "filter1 dispatched1 filter2 asyncFilter filter3 dispatched2 filter4 asyncHandler",
                 response.responseBody
         )
+
+        server.stop()
+    }
+
+    @Test
+    fun dispatchRouteHandlerTest() {
+        val responseAttachmentKey = AttachmentKey.create(String::class.java)
+        val router = RouterBuilder()
+                .add(
+                        Methods.GET,
+                        "/test",
+                        Predicates.truePredicate(),
+                        DispatchingHandlerRouteHandler.create(
+                                { next ->
+                                    BlockingHandler(next)
+                                },
+                                { exchange ->
+                                    exchange.putAttachment(responseAttachmentKey, "test")
+                                    RouteStatus.Handled
+                                }
+                        )
+                )
+                .add(
+                        Methods.GET,
+                        "/async",
+                        Predicates.truePredicate(),
+                        DispatchingHandlerRouteHandler.create(
+                                { next ->
+                                    BlockingHandler(next)
+                                },
+                                { exchange ->
+                                    val future = CompletableFuture.runAsync {
+                                        Thread.sleep(100)
+                                        exchange.putAttachment(responseAttachmentKey, "async")
+                                    }
+                                    RouteStatus.Async(future)
+                                }
+                        )
+                )
+                .build()
+
+        val pipelineHandler = PipelineHandlerBuilder(router)
+                .responseFilter { exchange ->
+                    val response = exchange.getAttachment(responseAttachmentKey) ?: ""
+                    exchange.responseSender.send(response)
+                }
+                .build()
+
+        val server = Undertow.builder()
+                .addHttpListener(8082, "0.0.0.0", pipelineHandler)
+                .build()
+
+        CompletableFuture.runAsync { server.start() }
+
+        val testResponse = asyncHttpClient
+                .prepareGet("http://localhost:8082/test")
+                .execute().toCompletableFuture().join()
+
+        Assert.assertEquals("test", testResponse.responseBody)
+
+        val asyncResponse = asyncHttpClient
+                .prepareGet("http://localhost:8082/async")
+                .execute().toCompletableFuture().join()
+
+        Assert.assertEquals("async", asyncResponse.responseBody)
 
         server.stop()
     }

@@ -67,17 +67,23 @@ class PipelineHandler(
 
             if (state == PipelineState.HANDLE_ROUTER) {
                 val status = router.apply(exchange)
-                if (status is RouteStatus.Async) {
-                    exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
-                        status.future.thenAccept {
-                            exchange.putAttachment(PIPELINE_STATE_KEY, PipelineState.HANDLE_RESPONSE_FILTERS)
-                            handleRequest(exchange)
-                        }
-                    })
-                    return
-                } else {
-                    state = PipelineState.HANDLE_RESPONSE_FILTERS
+                when (status) {
+                    RouteStatus.Dispatched -> {
+                        exchange.putAttachment(PIPELINE_STATE_KEY, PipelineState.HANDLE_ROUTER)
+                        return
+                    }
+                    is RouteStatus.Async -> {
+                        exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
+                            status.future.thenAccept {
+                                exchange.putAttachment(PIPELINE_STATE_KEY, PipelineState.HANDLE_RESPONSE_FILTERS)
+                                handleRequest(exchange)
+                            }
+                        })
+                        return
+                    }
+                    else -> state = PipelineState.HANDLE_RESPONSE_FILTERS
                 }
+
             }
         } catch (e: Exception) {
             exceptionHandler(e, exchange)

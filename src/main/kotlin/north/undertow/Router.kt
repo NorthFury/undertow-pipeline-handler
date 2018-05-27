@@ -19,12 +19,21 @@ class Router(
         val routes = routesByMethod[exchange.requestMethod]
                 ?: return notFoundRouteHandler(exchange)
 
+        val matchedRoute = exchange.getAttachment(MATCHED_ROUTE_KEY)
+        if (matchedRoute != null) {
+            return matchedRoute.handler(exchange)
+        }
+
         val pathParams = mutableMapOf<String, String>()
-        for ((_, pathTemplate, predicate, handler) in routes) {
-            if (predicate.resolve(exchange) && pathTemplate.matches(exchange.relativePath, pathParams)) {
-                val pathTemplateMatch = PathTemplateMatch(pathTemplate.templateString, pathParams)
+        for (route in routes) {
+            if (route.predicate.resolve(exchange) && route.pathTemplate.matches(exchange.relativePath, pathParams)) {
+                val pathTemplateMatch = PathTemplateMatch(route.pathTemplate.templateString, pathParams)
                 exchange.putAttachment(PATH_MATCH_ATTACHMENT_KEY, pathTemplateMatch)
-                return handler(exchange)
+                val status = route.handler(exchange)
+                if (status == RouteStatus.Dispatched) {
+                    exchange.putAttachment(MATCHED_ROUTE_KEY, route)
+                }
+                return status
             }
         }
 
@@ -32,9 +41,11 @@ class Router(
     }
 
     companion object {
-        val PATH_MATCH_ATTACHMENT_KEY = AttachmentKey.create<PathTemplateMatch>(PathTemplateMatch::class.java)!!
+        private val MATCHED_ROUTE_KEY = AttachmentKey.create(Route::class.java)!!
+        val PATH_MATCH_ATTACHMENT_KEY = AttachmentKey.create(PathTemplateMatch::class.java)!!
     }
 }
+
 data class Route(
         val method: HttpString,
         val pathTemplate: PathTemplate,
@@ -58,6 +69,7 @@ typealias RouteHandler = (exchange: HttpServerExchange) -> RouteStatus
 
 sealed class RouteStatus {
     object Handled : RouteStatus()
+    object Dispatched : RouteStatus()
     class Async(val future: CompletableFuture<*>) : RouteStatus()
 }
 
