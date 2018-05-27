@@ -15,6 +15,8 @@ class PipelineHandler(
 ) : HttpHandler {
 
     override fun handleRequest(exchange: HttpServerExchange) {
+        exchange.putAttachment(ROOT_HANDLER_KEY, this)
+
         var state = exchange.getAttachment(PIPELINE_STATE_KEY) ?: PipelineState.HANDLE_REQUEST_FILTERS
 
         try {
@@ -23,29 +25,36 @@ class PipelineHandler(
                 requestFiltersLoop@
                 while (i < requestFilters.size) {
                     val (predicate, filter) = requestFilters[i]
-                    if (predicate.resolve(exchange)) {
-                        val status = filter(exchange)
-                        when (status) {
-                            Continue -> i++
-                            RequestHandled -> {
-                                state = PipelineState.HANDLE_RESPONSE_FILTERS
-                                break@requestFiltersLoop
-                            }
-                            is AsyncProcessStarted -> {
-                                exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
-                                    status.future.thenAccept { asyncStatus ->
-                                        when (asyncStatus) {
-                                            Continue -> exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
-                                            RequestHandled -> exchange.putAttachment(
-                                                    PIPELINE_STATE_KEY,
-                                                    PipelineState.HANDLE_RESPONSE_FILTERS
-                                            )
-                                        }
-                                        handleRequest(exchange)
+                    if (!predicate.resolve(exchange)) {
+                        i++
+                        continue
+                    }
+
+                    val status = filter(exchange)
+                    when (status) {
+                        Continue -> i++
+                        Dispatched -> {
+                            exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
+                            return
+                        }
+                        RequestHandled -> {
+                            state = PipelineState.HANDLE_RESPONSE_FILTERS
+                            break@requestFiltersLoop
+                        }
+                        is AsyncProcessStarted -> {
+                            exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
+                                status.future.thenAccept { asyncStatus ->
+                                    when (asyncStatus) {
+                                        Continue -> exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
+                                        RequestHandled -> exchange.putAttachment(
+                                                PIPELINE_STATE_KEY,
+                                                PipelineState.HANDLE_RESPONSE_FILTERS
+                                        )
                                     }
-                                })
-                                return
-                            }
+                                    handleRequest(exchange)
+                                }
+                            })
+                            return
                         }
                     }
                 }
@@ -85,6 +94,7 @@ class PipelineHandler(
     companion object {
         private val PIPELINE_STATE_KEY = AttachmentKey.create(PipelineState::class.java)!!
         private val FILTER_POSITION_KEY = AttachmentKey.create(Int::class.java)!!
+        val ROOT_HANDLER_KEY = AttachmentKey.create(HttpHandler::class.java)!!
     }
 }
 
@@ -98,6 +108,7 @@ sealed class FilterStatus
 sealed class SyncFilterStatus : FilterStatus()
 object Continue : SyncFilterStatus()
 object RequestHandled : SyncFilterStatus()
+object Dispatched : FilterStatus()
 class AsyncProcessStarted(val future: CompletableFuture<out SyncFilterStatus>) : FilterStatus()
 
 typealias RequestFilter = (exchange: HttpServerExchange) -> FilterStatus

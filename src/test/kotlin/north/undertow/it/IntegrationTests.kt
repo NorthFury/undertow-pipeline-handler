@@ -3,11 +3,13 @@ package north.undertow.it
 import io.undertow.Undertow
 import io.undertow.predicate.Predicates
 import io.undertow.server.HttpServerExchange
+import io.undertow.server.handlers.BlockingHandler
 import io.undertow.util.AttachmentKey
 import io.undertow.util.Methods
 import north.undertow.AsyncProcessStarted
 import north.undertow.AsyncResponse
 import north.undertow.Continue
+import north.undertow.DispatchingHandlerFilter
 import north.undertow.builder.PipelineHandlerBuilder
 import north.undertow.builder.RouterBuilder
 import org.asynchttpclient.Dsl
@@ -42,6 +44,16 @@ class IntegrationTests {
                     exchange.appendToResponse("filter1")
                     Continue
                 }
+                .requestFilter(DispatchingHandlerFilter.create { next ->
+                    BlockingHandler { exchange ->
+                        exchange.appendToResponse("dispatched1")
+                        next.handleRequest(exchange)
+                    }
+                })
+                .requestFilter { exchange ->
+                    exchange.appendToResponse("filter2")
+                    Continue
+                }
                 .requestFilter { exchange ->
                     val future = CompletableFuture.runAsync {
                         Thread.sleep(100)
@@ -50,7 +62,17 @@ class IntegrationTests {
                     AsyncProcessStarted(future.thenApply { Continue })
                 }
                 .requestFilter { exchange ->
-                    exchange.appendToResponse("filter2")
+                    exchange.appendToResponse("filter3")
+                    Continue
+                }
+                .requestFilter(DispatchingHandlerFilter.create { next ->
+                    BlockingHandler { exchange ->
+                        exchange.appendToResponse("dispatched2")
+                        next.handleRequest(exchange)
+                    }
+                })
+                .requestFilter { exchange ->
+                    exchange.appendToResponse("filter4")
                     Continue
                 }
                 .responseFilter { exchange ->
@@ -70,7 +92,7 @@ class IntegrationTests {
                 .execute().toCompletableFuture().join()
 
         Assert.assertEquals(
-                "filter1 asyncFilter filter2 asyncHandler",
+                "filter1 dispatched1 filter2 asyncFilter filter3 dispatched2 filter4 asyncHandler",
                 response.responseBody
         )
 
