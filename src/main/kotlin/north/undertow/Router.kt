@@ -48,17 +48,18 @@ data class PathTemplateMatch(
 )
 
 /**
- * Only write a response to the exchange if you return [Handled].
+ * Only write a response to the exchange if you return [RouteStatus.Handled].
  *
- * If you return [AsyncResponse], use [HttpServerExchange.putAttachment]
+ * If you return [RouteStatus.Async], use [HttpServerExchange.putAttachment]
  * to store your response object on the exchange and use a [ResponseFilter]
  * to serialize your response object and then write it.
  */
 typealias RouteHandler = (exchange: HttpServerExchange) -> RouteStatus
 
-sealed class RouteStatus
-object Handled : RouteStatus()
-class AsyncResponse(val future: CompletableFuture<*>) : RouteStatus()
+sealed class RouteStatus {
+    object Handled : RouteStatus()
+    class Async(val future: CompletableFuture<*>) : RouteStatus()
+}
 
 
 /**

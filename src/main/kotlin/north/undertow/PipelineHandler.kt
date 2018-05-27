@@ -32,24 +32,26 @@ class PipelineHandler(
 
                     val status = filter(exchange)
                     when (status) {
-                        Continue -> i++
-                        Dispatched -> {
-                            exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
-                            return
-                        }
-                        RequestHandled -> {
+                        FilterStatus.Done.Continue -> i++
+                        FilterStatus.Done.RequestHandled -> {
                             state = PipelineState.HANDLE_RESPONSE_FILTERS
                             break@requestFiltersLoop
                         }
-                        is AsyncProcessStarted -> {
+                        FilterStatus.Dispatched -> {
+                            exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
+                            return
+                        }
+                        is FilterStatus.AsyncStarted -> {
                             exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
                                 status.future.thenAccept { asyncStatus ->
                                     when (asyncStatus) {
-                                        Continue -> exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
-                                        RequestHandled -> exchange.putAttachment(
-                                                PIPELINE_STATE_KEY,
-                                                PipelineState.HANDLE_RESPONSE_FILTERS
-                                        )
+                                        FilterStatus.Done.Continue ->
+                                            exchange.putAttachment(FILTER_POSITION_KEY, i + 1)
+                                        FilterStatus.Done.RequestHandled ->
+                                            exchange.putAttachment(
+                                                    PIPELINE_STATE_KEY,
+                                                    PipelineState.HANDLE_RESPONSE_FILTERS
+                                            )
                                     }
                                     handleRequest(exchange)
                                 }
@@ -65,7 +67,7 @@ class PipelineHandler(
 
             if (state == PipelineState.HANDLE_ROUTER) {
                 val status = router.apply(exchange)
-                if (status is AsyncResponse) {
+                if (status is RouteStatus.Async) {
                     exchange.dispatch(SameThreadExecutor.INSTANCE, Runnable {
                         status.future.thenAccept {
                             exchange.putAttachment(PIPELINE_STATE_KEY, PipelineState.HANDLE_RESPONSE_FILTERS)
@@ -104,12 +106,14 @@ private enum class PipelineState {
     HANDLE_RESPONSE_FILTERS
 }
 
-sealed class FilterStatus
-sealed class SyncFilterStatus : FilterStatus()
-object Continue : SyncFilterStatus()
-object RequestHandled : SyncFilterStatus()
-object Dispatched : FilterStatus()
-class AsyncProcessStarted(val future: CompletableFuture<out SyncFilterStatus>) : FilterStatus()
+sealed class FilterStatus {
+    sealed class Done : FilterStatus() {
+        object Continue : Done()
+        object RequestHandled : Done()
+    }
+    object Dispatched : FilterStatus()
+    class AsyncStarted(val future: CompletableFuture<out Done>) : FilterStatus()
+}
 
 typealias RequestFilter = (exchange: HttpServerExchange) -> FilterStatus
 

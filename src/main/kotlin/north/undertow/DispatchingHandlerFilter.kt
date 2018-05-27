@@ -8,7 +8,7 @@ object DispatchingHandlerFilter {
 
         return { exchange ->
             handler.handleRequest(exchange)
-            Dispatched
+            FilterStatus.Dispatched
         }
     }
 

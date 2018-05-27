@@ -4,9 +4,9 @@ import io.undertow.predicate.Predicate
 import io.undertow.util.HttpString
 import io.undertow.util.PathTemplate
 import io.undertow.util.StatusCodes
-import north.undertow.Handled
 import north.undertow.Route
 import north.undertow.RouteHandler
+import north.undertow.RouteStatus
 import north.undertow.Router
 
 class RouterBuilder {
@@ -14,7 +14,7 @@ class RouterBuilder {
     private var notFoundRouteHandler: RouteHandler = { exchange ->
         exchange.statusCode = StatusCodes.NOT_FOUND
         exchange.responseSender.send(StatusCodes.NOT_FOUND_STRING)
-        Handled
+        RouteStatus.Handled
     }
 
     fun build(): Router = Router(routes.toList(), notFoundRouteHandler)

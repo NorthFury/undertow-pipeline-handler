@@ -20,7 +20,7 @@ object Oauth {
                 ?.substring(BEARER_PREFIX_LENGTH)
 
 
-        if (token == null) Continue else {
+        if (token == null) FilterStatus.Done.Continue else {
             val request = Dsl.get(endpoint)
                     .addQueryParam("access_token", token)
                     .build()
@@ -37,9 +37,9 @@ object Oauth {
                         } catch (e: Exception) {
                             logger.error("TokenInfo parsing error", e)
                         }
-                        Continue
+                        FilterStatus.Done.Continue
                     }
-            AsyncProcessStarted(future)
+            FilterStatus.AsyncStarted(future)
         }
     }
 
@@ -48,12 +48,12 @@ object Oauth {
         when {
             tokenInfo == null -> {
                 exchange.respondWith(UNAUTHORIZED_PROBLEM)
-                Handled
+                RouteStatus.Handled
             }
 
             scopes.isNotEmpty() && scopes.all { it !in tokenInfo.scope } -> {
                 exchange.respondWith(Problem.FORBIDDEN)
-                Handled
+                RouteStatus.Handled
             }
 
             else -> handler(exchange)

@@ -6,10 +6,7 @@ import io.undertow.server.HttpServerExchange
 import io.undertow.server.handlers.BlockingHandler
 import io.undertow.util.AttachmentKey
 import io.undertow.util.Methods
-import north.undertow.AsyncProcessStarted
-import north.undertow.AsyncResponse
-import north.undertow.Continue
-import north.undertow.DispatchingHandlerFilter
+import north.undertow.*
 import north.undertow.builder.PipelineHandlerBuilder
 import north.undertow.builder.RouterBuilder
 import org.asynchttpclient.Dsl
@@ -35,14 +32,14 @@ class IntegrationTests {
                         Thread.sleep(100)
                         exchange.appendToResponse("asyncHandler")
                     }
-                    AsyncResponse(future)
+                    RouteStatus.Async(future)
                 }
                 .build()
 
         val pipelineHandler = PipelineHandlerBuilder(router)
                 .requestFilter { exchange ->
                     exchange.appendToResponse("filter1")
-                    Continue
+                    FilterStatus.Done.Continue
                 }
                 .requestFilter(DispatchingHandlerFilter.create { next ->
                     BlockingHandler { exchange ->
@@ -52,18 +49,18 @@ class IntegrationTests {
                 })
                 .requestFilter { exchange ->
                     exchange.appendToResponse("filter2")
-                    Continue
+                    FilterStatus.Done.Continue
                 }
                 .requestFilter { exchange ->
                     val future = CompletableFuture.runAsync {
                         Thread.sleep(100)
                         exchange.appendToResponse("asyncFilter")
                     }
-                    AsyncProcessStarted(future.thenApply { Continue })
+                    FilterStatus.AsyncStarted(future.thenApply { FilterStatus.Done.Continue })
                 }
                 .requestFilter { exchange ->
                     exchange.appendToResponse("filter3")
-                    Continue
+                    FilterStatus.Done.Continue
                 }
                 .requestFilter(DispatchingHandlerFilter.create { next ->
                     BlockingHandler { exchange ->
@@ -73,7 +70,7 @@ class IntegrationTests {
                 })
                 .requestFilter { exchange ->
                     exchange.appendToResponse("filter4")
-                    Continue
+                    FilterStatus.Done.Continue
                 }
                 .responseFilter { exchange ->
                     val response = exchange.getAttachment(responseAttachmentKey) ?: ""
