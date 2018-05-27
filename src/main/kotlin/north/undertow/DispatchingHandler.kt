@@ -3,8 +3,17 @@ package north.undertow
 import io.undertow.server.HttpHandler
 import io.undertow.util.AttachmentKey
 
-object DispatchingHandlerRouteHandler {
-    fun create(dispatchingHandlerBuilder: (next: HttpHandler) -> HttpHandler, next: RouteHandler): RouteHandler {
+object DispatchingHandler {
+    fun createRequestFilter(builder: (next: HttpHandler) -> HttpHandler): RequestFilter {
+        val handler = builder(rootHandlerDispatcher)
+
+        return { exchange ->
+            handler.handleRequest(exchange)
+            FilterStatus.Dispatched
+        }
+    }
+
+    fun createRouteHandler(dispatchingHandlerBuilder: (next: HttpHandler) -> HttpHandler, next: RouteHandler): RouteHandler {
         val dispatchedKey = AttachmentKey.create(Boolean::class.java)
         val handler = dispatchingHandlerBuilder(rootHandlerDispatcher)
 

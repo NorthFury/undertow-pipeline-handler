@@ -41,7 +41,7 @@ class IntegrationTests {
                     exchange.appendToResponse("filter1")
                     FilterStatus.Done.Continue
                 }
-                .requestFilter(DispatchingHandlerFilter.create { next ->
+                .requestFilter(DispatchingHandler.createRequestFilter { next ->
                     BlockingHandler { exchange ->
                         exchange.appendToResponse("dispatched1")
                         next.handleRequest(exchange)
@@ -62,7 +62,7 @@ class IntegrationTests {
                     exchange.appendToResponse("filter3")
                     FilterStatus.Done.Continue
                 }
-                .requestFilter(DispatchingHandlerFilter.create { next ->
+                .requestFilter(DispatchingHandler.createRequestFilter { next ->
                     BlockingHandler { exchange ->
                         exchange.appendToResponse("dispatched2")
                         next.handleRequest(exchange)
@@ -104,7 +104,7 @@ class IntegrationTests {
                         Methods.GET,
                         "/test",
                         Predicates.truePredicate(),
-                        DispatchingHandlerRouteHandler.create(
+                        DispatchingHandler.createRouteHandler(
                                 { next ->
                                     BlockingHandler(next)
                                 },
@@ -118,7 +118,7 @@ class IntegrationTests {
                         Methods.GET,
                         "/async",
                         Predicates.truePredicate(),
-                        DispatchingHandlerRouteHandler.create(
+                        DispatchingHandler.createRouteHandler(
                                 { next ->
                                     BlockingHandler(next)
                                 },
